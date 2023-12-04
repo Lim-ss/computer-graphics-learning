@@ -232,7 +232,7 @@ void rst::rasterizer::draw(std::vector<Triangle *> &TriangleList)
             newtri.setNormal(i, n[i].head<3>());
         }
 
-        newtri.setColor(0, 148, 121.0, 92.0);
+        newtri.setColor(0, 148, 121.0, 92.0);//默认颜色，如果有贴图，这些颜色会被覆盖
         newtri.setColor(1, 148, 121.0, 92.0);
         newtri.setColor(2, 148, 121.0, 92.0);
 
@@ -306,11 +306,12 @@ void rst::rasterizer::rasterize_triangle(const Triangle &t, const std::array<Eig
             // auto interpolated_normal
             // auto interpolated_texcoords
             // auto interpolated_shadingcoords
-            auto interpolated_z = interpolate(alpha / v[0].w(), beta / v[1].w(), gamma / v[2].w(), v[0].z(), v[1].z(), v[2].z(), 1 / W);
+            //其实除了z其他几个插值最好在insideTriangle（）里做，这样子不用画出来的三角形就不需要计算插值，大大节约开销，这里只是为了看得更清楚所以写在一起
+            auto interpolated_z = interpolate(alpha / v[0].w(), beta / v[1].w(), gamma / v[2].w(), v[0].z(), v[1].z(), v[2].z(), 1 / W);//这里插值的z是屏幕空间中的z，实际上用视口空间的z也行，因为只需要比较相对远近
             auto interpolated_color = interpolate(alpha / v[0].w(), beta / v[1].w(), gamma / v[2].w(), t.color[0], t.color[1], t.color[2], 1 / W);
             auto interpolated_normal = interpolate(alpha / v[0].w(), beta / v[1].w(), gamma / v[2].w(), t.normal[0], t.normal[1], t.normal[2], 1 / W);
             auto interpolated_texcoords = interpolate(alpha / v[0].w(), beta / v[1].w(), gamma / v[2].w(), t.tex_coords[0], t.tex_coords[1], t.tex_coords[2], 1 / W);
-
+            auto interpolated_shadingcoords = interpolate(alpha / v[0].w(), beta / v[1].w(), gamma / v[2].w(), view_pos[0], view_pos[1], view_pos[2], 1 / W);//像素对应三角形上的点在视口空间坐标系中的坐标，用于计算shade时的方向、距离等
             if (x < 0 || x >= width || y < 0 || y >= height) // 检测是否超过屏幕范围，防止越界访问缓存
                 continue;
             if (interpolated_z > 0) // 如果三角形上对应该点在相机后面，则看不见，按理来说应该要判断是否在Znear和Zfar之间，但是由于rasterizer并未存该值，所以这里仅判断是否在相机前面（后面想的话随时可以加上这两个变量）
@@ -325,11 +326,12 @@ void rst::rasterizer::rasterize_triangle(const Triangle &t, const std::array<Eig
             if (insideTriangle(x, y, t.v))
             {
                 depth_buf[ind] = -interpolated_z; // SSAA时，不能放在前面，否则不在三角形内的点的深度缓存也会错误地被更新，为了统一，这里也放if里面
+                fragment_shader_payload payload(interpolated_color,interpolated_normal,interpolated_texcoords,&texture.value());
+                payload.view_pos = interpolated_shadingcoords;//通过函数参数传进来的
+                auto result_color = fragment_shader(payload);
                 Eigen::Vector2i point;
                 point << x, y;
-
-                Vector3f temp_color = {255*255,255*255,255*255};
-                set_pixel(point, interpolated_color*255);
+                set_pixel(point, result_color );
             }
 #endif
         }

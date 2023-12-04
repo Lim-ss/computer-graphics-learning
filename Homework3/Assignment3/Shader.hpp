@@ -8,7 +8,7 @@
 #include "Texture.hpp"
 
 
-struct fragment_shader_payload
+struct fragment_shader_payload//用来传递渲染一个点需要的一些变量
 {
     fragment_shader_payload()
     {
@@ -16,10 +16,10 @@ struct fragment_shader_payload
     }
 
     fragment_shader_payload(const Eigen::Vector3f& col, const Eigen::Vector3f& nor,const Eigen::Vector2f& tc, Texture* tex) :
-         color(col), normal(nor), tex_coords(tc), texture(tex) {}
+         color(col), normal(nor), tex_coords(tc), texture(tex) {}//为什么构造函数没有初始化pos变量？
 
 
-    Eigen::Vector3f view_pos;
+    Eigen::Vector3f view_pos;//这个应该不是眼睛位置的意思，应该指的是要shade的点的位置
     Eigen::Vector3f color;
     Eigen::Vector3f normal;
     Eigen::Vector2f tex_coords;

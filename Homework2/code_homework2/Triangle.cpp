@@ -37,7 +37,8 @@ void Triangle::setColor(int ind, float r, float g, float b) {
         exit(-1);
     }
 
-    color[ind] = Vector3f((float)r/255.,(float)g/255.,(float)b/255.);
+    //color[ind] = Vector3f((float)r/255.,(float)g/255.,(float)b/255.);
+    color[ind] = Vector3f(r,g,b);
     return;
 }
 void Triangle::setTexCoord(int ind, float s, float t) {
